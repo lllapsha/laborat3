@@ -15,7 +15,7 @@
                 Console.WriteLine("3. Удалить трек");
                 Console.WriteLine("4. Поиск трека");
                 Console.WriteLine("5. Сохранить треки");
-                Console.WriteLine("8. Загрузить треки");
+                Console.WriteLine("6. Загрузить треки");
                 Console.WriteLine("q. Выйти");
 
                 Console.WriteLine();
@@ -154,7 +154,7 @@
             Console.Write("Введите автора композиции: ");
             string authorName = Console.ReadLine();
 
-            return new Track(songName, authorName);
+            return new Track { Title = songName, Author = authorName };
 
         }
     }

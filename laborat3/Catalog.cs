@@ -14,7 +14,7 @@ namespace laborat3
         private readonly List<Track> tracks = new List<Track>();
         private const string JsonFilePath = "tracks.json";
         private const string XmlFilePath = "tracks.xml";
-        private const string DbConnectionString = "Data Source=tracks.db";
+        private const string DbConnectionString = "Data Source=tracks.db;";
 
         public IEnumerable<Track> AllTrack { get; set; }
 
@@ -65,20 +65,41 @@ namespace laborat3
 
         public void LoadFromJson()
         {
-            if (File.Exists(JsonFilePath))
+
+            try
             {
-                var json = File.ReadAllText(JsonFilePath);
-                tracks.Clear();
-                tracks.AddRange(JsonSerializer.Deserialize<List<Track>>(json));
+                if (File.Exists(JsonFilePath))
+                {
+                    string jsonData = File.ReadAllText(JsonFilePath);
+                    tracks.AddRange(JsonSerializer.Deserialize<List<Track>>(jsonData));
+                }
+                else
+                {
+                    throw new FileNotFoundException("JSON file not found.", JsonFilePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading data from JSON: {ex.Message}");
+                // Добавьте дополнительную обработку ошибок при необходимости
             }
         }
 
         public void SaveToXml()
         {
-            var serializer = new XmlSerializer(typeof(List<Task>));
-            using (var stream = new StreamWriter(XmlFilePath))
+           
+
+            try
             {
-                serializer.Serialize(stream, tracks);
+                var serializer = new XmlSerializer(typeof(List<Track>));
+                using (FileStream fileStream = new FileStream(XmlFilePath, FileMode.Create))
+                {
+                    serializer.Serialize(fileStream, tracks);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при сохранении в XML: {ex.Message}");
             }
         }
 
@@ -86,10 +107,9 @@ namespace laborat3
         {
             if (File.Exists(XmlFilePath))
             {
-                var serializer = new XmlSerializer(typeof(List<Task>));
+                var serializer = new XmlSerializer(typeof(List<Track>));
                 using (var stream = new StreamReader(XmlFilePath))
                 {
-                    tracks.Clear();
                     tracks.AddRange((List<Track>)serializer.Deserialize(stream));
                 }
             }
@@ -97,25 +117,23 @@ namespace laborat3
 
         public void SaveToSQLite()
         {
+            
             using (var connection = new SqliteConnection(DbConnectionString))
             {
                 connection.Open();
 
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = @"
-                CREATE TABLE IF NOT EXISTS Tracks (
-                    Title TEXT,
-                    Author TEXT
-                )";
-
+                    command.CommandText = "CREATE TABLE IF NOT EXISTS Tracks (Title TEXT, Author TEXT)";
                     command.ExecuteNonQuery();
 
-                    foreach (var track in tracks)
+                    foreach (Track track in tracks)
                     {
-                        command.CommandText = $@"
-                    INSERT INTO Tracks (Title, Author)
-                    VALUES ('{track.Title}', {track.Author})";
+                        command.CommandText = "INSERT INTO Tracks (Title, Author) VALUES (@title, @author)";
+                        command.Parameters.Clear();
+
+                        command.Parameters.AddWithValue("@title", track.Title);
+                        command.Parameters.AddWithValue("@author", track.Author);
 
                         command.ExecuteNonQuery();
                     }
@@ -126,19 +144,23 @@ namespace laborat3
 
         public void LoadFromSQLite()
         {
+            
+
             using (var connection = new SqliteConnection(DbConnectionString))
             {
                 connection.Open();
 
-                using (var command = connection.CreateCommand())
+                using (SqliteCommand command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT * FROM Tracks";
 
-                    using (var reader = command.ExecuteReader())
+                    using (SqliteDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            tracks.Add(new Track(reader.GetString(0), reader.GetString(1)));
+                            string title = reader["Title"].ToString();
+                            string author = reader["Author"].ToString();
+                            tracks.Add(new Track { Title = title, Author = author });
                         }
                     }
                 }
