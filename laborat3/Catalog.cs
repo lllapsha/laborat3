@@ -12,8 +12,8 @@ namespace laborat3
      public class Catalog
     {
         private readonly List<Track> tracks = new List<Track>();
-        private const string JsonFilePath = "tracks.json";
-        private const string XmlFilePath = "tracks.xml";
+        public const string JsonFilePath = "tracks.json";
+        public const string XmlFilePath = "tracks.xml";
         private const string DbConnectionString = "Data Source=tracks.db;";
 
         public IEnumerable<Track> AllTrack { get; set; }
